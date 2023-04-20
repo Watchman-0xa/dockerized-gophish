@@ -1,65 +1,67 @@
-# GoPhish Dockerizado
+# Dockerized GoPhish
 
-Montando y configurando sistema de phishing GoPhish en sistema Ubuntu Sever con Docker.
+Setting up and configuring GoPhish phishing system on Ubuntu Server with Docker.
 
 ---------------------------------------------------------------
 
-Índice :
+Index:
 
-  1. Preparación
-  2. Instalación de GoPhish
-  3. Containers de Docker
-  4. MariaDB - Bases de datos
+  1. Preparation
+  2. Installing GoPhish
+  3. Docker Containers
+  4. MariaDB - Databases
   5. GoPhish
   6. Dockerfile
-  7. Advertencia
-  8. Uso de GoPhish
+  7. Warning
+  8. Using GoPhish
 
-Preparando el servidor, lo primero necesitaremos un servidor con Ubuntu Server instalado. [Ubuntu Server](https://ubuntu.com/download/server)
-Cuando nuestro servidor esté instalado correctamente necesitaremos lo siguiente :
+Preparing the server, first we need a server with Ubuntu Server installed. [Ubuntu Server](https://ubuntu.com/download/server)
+Once our server is installed correctly we will need the following:
 
-  - OpenSSH : Nos permitirá la conexión remota al servidor mediante ssh. (sudo apt install openssh-server)
-  - Docker : Crearemos diversos contenedores para instalar GoPhish. (sudo apt install docker && sudo apt install docker.io)
-  - UFW : Lo usaremos como firewall para abrir y bloquear puertos. (sudo apt install ufw)
-  - Unzip : Descomprimiremos GoPhish (sudo apt install unzip)
-  - Maria DB : Lo utilizaremos como base de datos (sudo apt install mariadb-server && sudo mysql_secure_installation)
-  
-  ```sh
+  - OpenSSH: It will allow us to remotely connect to the server via ssh. (sudo apt install openssh-server)
+  - Docker: We will create various containers to install GoPhish. (sudo apt install docker && sudo apt install docker.io)
+  - UFW: We will use it as a firewall to open and block ports. (sudo apt install ufw)
+  - Unzip: We will unzip GoPhish (sudo apt install unzip)
+  - Maria DB: We will use it as a database (sudo apt install mariadb-server && sudo mysql_secure_installation)
+
+```sh
   sudo apt install openssh-server
   sudo apt install docker && sudo apt install docker.io
   sudo apt install ufw
   sudo apt install unzip
   sudo apt install mariadb-server && sudo mysql_secure_installation
 ```
-Para activar los distintos servicios ejecutaremos los siguientes comandos:
 
-```
+To activate the different services we will run the following commands:
+
+```sh
 $ sudo systemctl enable ssh
 $ sudo ufw enable
 $ sudo systemctl start docker
 $ sudo systemctl start mariadb
 ```
 
-Lo primero de todo sera conectarnos mediante ssh a nuestro servidor remoto. Desde el servidor deberemos dar acceso a una conexión en el puerto 22(SSH), lo podemos ejectuar con el siguiente comando : ```ufw allow 22/tcp```.
+The first thing we need to do is to connect via ssh to our remote server. From the server, we must grant access to a connection on port 22 (SSH), which can be done with the following command: ```ufw allow 22/tcp```.
 
-Con el puerto 22 ya abierto para recibir conexiones ya podremos conectarnos a nuestro servidor con el siguiente comando : ```ssh -p 22 {usuario}@{ip}``` (Sustituyendo usuario por el nombre de usuario definido en el servidor o root y la ip por la ip local
-publica del servidor)
+With port 22 open to receive connections, we can now connect to our server with the following command: ssh -p 22 {user}@{ip} (replacing user with the username defined on the server or root, and ip with the server's public local ip address)
 
-Para más seguridad se recomienda bloquear las conexiones al servidor mediante root, utilizar una clave SSH y utilizar un puerto de conexión remota distinto al predeterminado.
+For added security, it is recommended to block connections to the server using root, use an SSH key, and use a remote connection port other than the default.
 
-Ahora crearemos un usuario nuevo en nuestro sistema y lo añadiremos a Docker : 
+Now we will create a new user on our system and add it to Docker:
+
 ```sh
 useradd -s /bin/bash -d /home/gophish-user/ -m -G docker gophish-user
 ```
 
-Puertos que requerirán estar abiertos de manera predeterminada:
+Ports that will need to be open by default:
 
-- 3333/tcp : Admin Panel GoPhish
-- 9000/tcp : Portainer
-- 81/tcp : Campañas
+    3333/tcp: GoPhish Admin Panel
+    9000/tcp: Portainer
+    81/tcp: Campaigns
 
-Reglas de la Firewall abiertas:
-```
+Open firewall rules:
+
+```sh
 root@sv:/home/gophish-user# ufw status
 Status: active
 
@@ -68,89 +70,95 @@ To                         Action      From
 22/tcp                     ALLOW       Anywhere                  
 3333/tcp                   ALLOW       Anywhere                  
 9000/tcp                   ALLOW       Anywhere                  
-81/tcp                     ALLOW       Anywhere     
+81/tcp                     ALLOW       Anywhere 
 ```
-# Instalación de GoPhish
 
-[Descargar](https://getgophish.com/)
+# Installation of GoPhish
 
-[Repositorio de GitHub](https://github.com/gophish/gophish/releases)
+[Download](https://getgophish.com/)
 
-Descargar la versión mas reciente de GoPhish(v0.12.1)
+[GitHub repository](https://github.com/gophish/gophish/releases)
 
-Linux de 32 Bits : https://github.com/gophish/gophish/releases/download/v0.12.1/gophish-v0.12.1-linux-32bit.zip
+Download the latest version of GoPhish(v0.12.1)
 
-Linux 64 Bits : https://github.com/gophish/gophish/releases/download/v0.12.1/gophish-v0.12.1-linux-64bit.zip
+32-bit Linux: https://github.com/gophish/gophish/releases/download/v0.12.1/gophish-v0.12.1-linux-32bit.zip
 
-Para descargarlo de manera más rápida:
+64-bit Linux: https://github.com/gophish/gophish/releases/download/v0.12.1/gophish-v0.12.1-linux-64bit.zip
 
-Para Linux de 32 Bits:
+To download it faster:
+
+For 32-bit Linux:
 ```sh
 $ wget https://github.com/gophish/gophish/releases/download/v0.12.1/gophish-v0.12.1-linux-32bit.zip
 ```
 
-Para Linux de 64 Bits:
+For 64-bit Linux:
 ```sh
 $ wget https://github.com/gophish/gophish/releases/download/v0.12.1/gophish-v0.12.1-linux-64bit.zip
 ```
 
-Ahora, extraeremos el archivo zip con el siguiente comando : ```$ unzip gophish-v0.12.1-linux-64bit.zip```
-Ya no necesitaremos el comprimido así que podemos eliminarlo : ```$ rm gophish-v0.12.1-linux-64bit.zip```
+Now, we will extract the zip file with the following command: ```$ unzip gophish-v0.12.1-linux-64bit.zip```
+We will no longer need the compressed file so we can delete it: ```$ rm gophish-v0.12.1-linux-64bit.zip```
 
-Ahora, para proceder con la instalación de GoPhish tendremos que darle permisos de ejecución al archivo binario y ejecutarlo.
-Para darle permisos de ejecución usaremos : ```$ chmod +x gophish```
-Y una vez ya con permisos, lo ejecutaremos de la siguiente manera : ```$ sudo ./gophish```
+Now, to proceed with the installation of GoPhish, we will need to give execution permissions to the binary file and execute it.
+To give execution permissions, we will use: ```$ chmod +x gophish```
+And once we have permissions, we will execute it in the following way: ```$ sudo ./gophish```
 
-Archivos de campña test y documentación oficial
+Test campaign files and official documentation
 
-Archivos para lanzar la campaña de prueba
+Files to launch the test campaign
 
 - landing.html
 - campaign.html
 
-# Containers de Docker
+# Docker Containers
 
-Servidor Web Bitnami para imágenes
+Bitnami Web Server for images
 
-Las imágenes del email con la campaña se encuentran en el servidor local de Ubunto en el path/home/gophish-user/Docker/Gophish/
-pache, el cual atachamos como volumen (BIND):
+The email images with the campaign are located on the local Ubuntu server at path /home/gophish-user/Docker/Gophish/
+pache, which we attach as a volume (BIND):
 
-```sh
+```
 docker run -d --restart always -p 8080:8080 -p 8443:8443 --name web_server -v ${HOME}/Docker/Gophish/apache:/opt/bitnami/apache2/htdocs/ bitnami/apache:latest
 ```
 
-Crear mysql_net bridge para poder esablecer una conexión.
+Create mysql_net bridge to be able to establish a connection.
 
 ```docker network create -d bridge mysql_net```
 
-# MariaDB - Bases de datos
+# MariaDB - Databases
 
-Necesitaremos MariaDB y MySQL.
+We will need MariaDB and MySQL.
 
-Volume: mariadb para montarle el volumen apuntando al path del Container /var/lib/mysql
+Volume: mariadb to mount the volume pointing to the Container path /var/lib/mysql
 
-Variables MySQL : 
+MySQL variables: 
 
 - root_pwd = Mascl3tA
 - db = gophish
 - user = gophish2
 - pwd = G0ph1sH
 
-Para añadir variables a nuestra base de datos tendremos que ejecutar MySQL de esta manera:
+To add variables to our database we will have to execute MySQL in this way:
+
 ```sh
 $ mariadb
 ```
-Y añadir variables así :
+
+And add variables like this:
+
 ```sql
 SET @variable_name := value;
 ```
 
-Comando Docker para añadirlas :
+Docker command to add them:
+
 ```sh
 docker run --restart always --network mysql_net --ip 192.169.0.2 --name mariadb -e MARIADB_ROOT_PASSWORD=Mascl3tA -v mariadb:/var/lib/mysql -d mariadb
 ```
-         
-Ahora accederemos y crearemos el usuario : 
+
+Now we will access and create the user:
+
 ```sh
 docker exec -it mariadb mysql -u root -p
 
@@ -165,7 +173,8 @@ MariaDB [(none)]> flush privileges;
 
 # GoPhish
 
-Fichero de configuracion de GoPhish -> config.json
+GoPhish configuration file -> config.json
+
 
 ```json
 {
@@ -191,9 +200,10 @@ Fichero de configuracion de GoPhish -> config.json
         }
 }
 ```
-Para que la configuración sea enfocada a un entorno local habría que cambiar la IP de admin_server y phish_server a nuestra IP
+
+For the configuration to be focused on a local environment, we would have to change the IP of admin_server and phish_server to our IP
 local.
-Podremos añadir nuestro certificado(.crt) y nuestra llave(.key). 
+We can add our certificate (.crt) and our key (.key).
 
 # Dockerfile
 
@@ -234,28 +244,20 @@ Para crear la imagen de GoPhish :
 docker build -t gophish/gophish-user:latest .
 ```
 
-Crear el Container de Gophish con la red de mysql_net, le agrego luego a la red por defecto bridgepara que levante los puertos
-y se conecte con el exterior y para finalizar entro a el Container yhago un update (ignoro el error) y un upgrade:
+Create the Gophish Container with the mysql_net network, then add bridge to the default network to raise the ports
+and it connects to the outside and to finish I enter the Container and do an update (I ignore the error) and an upgrade:
 
 ```sh
 docker run -d --name gophish --restart always --network mysql_net -p3333:3333 -p 81:81 gophish/user docker network connect bridge gophish
 ```
 
-# Advertencia
+# Warning
 
-Cuando se crea por primera vez el Container se ejecuta automáticamente elcomando ./gophish, y este lanza unos logs en donde mue
-tran la contraseña del usuario admin paraacceder por primera vez al sistema. Hay que usar esta y en el primer login ya te pide
-cambiarla. Si porel contrario la base de datos ya existe con los datos de usuario admin, por ejemplo si tenemos queeliminar el
-Container y levantarlo de nuevo pero sin perder datos, este paso no es necesario ya que semantiene la credencial guardada en la
-base de datos.
+When the Container is first created, the command ./gophish is automatically executed, and it outputs logs showing the admin user's password to access the system for the first time. You must use this password, and upon the first login, you will be prompted to change it. However, if the database already exists with the admin user's data, for example, if we need to delete the Container and start it up again without losing data, this step is not necessary since the credential is stored in the database.
 
-Reportes
+Reports
 
-GorePort.py, para obtener reportes más visuales que los ofrecidos por Gophish : https://github.com/chrismaddalena/GoreportEn el
-archivo lib/goreport.py se cambian los textos que genera el sistema, porque vienen en inglés. Clonamos el repo de Git : ```git
-clone https://github.com/chrismaddalena/Goreport.git``` En el directorio descargado me creo un entorno virtual de Python en cua
-quier equipo, lo activo einstalo las dependencias (el módulo python-docx me dio error, así que lo comenté en el txtposteriorme
-te lo instalé a mano sin ningún problema ```python -m pip install python-docx```):
+GorePort.py, to obtain more visual reports than those offered by Gophish: https://github.com/chrismaddalena/Goreport. In the lib/goreport.py file, the texts generated by the system are changed because they come in English. Clone the Git repo: `git clone https://github.com/chrismaddalena/Goreport.git`. In the downloaded directory, create a Python virtual environment on any computer, activate it, and install the dependencies (the python-docx module gave me an error, so I commented it out in the text, and later I installed it manually without any problem: `python -m pip install python-docx`). 
 
 ```sh
 $ cd Georeport
@@ -270,7 +272,8 @@ $ python -m pip install --upgrade pip
 $ python -m pip install -r requirements.txt
 ```
 
-Luego creas el archivo gophish.config y completas los datos necesarios:
+Then you create the gophish.config file and fill in the necessary data:
+
 ```sh
 [Gophish]
 
@@ -283,93 +286,70 @@ api_key:<YOUR_API_KEY>
 geolocate_key:<GEOLOCATE_API_KEY>
 ```
 
-Para obtener los informes debes de comprobar el ID de la campaña, por ejemplohttps://95.216.210.150:3333/campaigns/3 el id es 3
- Podemos obtener los informes en formato:
+To obtain the reports you must check the ID of the campaign, for example https://95.216.210.150:3333/campaigns/3, the id is 3. We can obtain the reports in the following formats:
 
-- excel: python GoReport.py --id 3 --format excel
+- Excel: python GoReport.py --id 3 --format excel
+- Word: python GoReport.py --id 3 --format word
 
-- word: python GoReport.py --id 3 --format word
-
-Infografías sobre Phishing
+Infographics on Phishing:
 
 https://www.wessii.com/infografias-phishing-y-suplantacion-de-identidad/
 
-# Uso de GoPhish
+# Using GoPhish
 
-Utilizaremos un caso con Google
+We will use a case with Google
 
-1. **Configurar "Sending Profile"**
+1. **Configure "Sending Profile"**
 
-Name : Utiliza el nombre que prefieras. (Google)
+Name: Use the name you prefer. (Google)
+Interface Type: Always use SMPT to use a mail web server.
+From: A valid email address. (example@gmail.com)
+Host: SMPT server link. (smpt.gmail.com:587)
+Username: Use the username you prefer. (example@gmail.com)
+Password: Your mail account password. (Ex: Example123)
 
-Interface Type : Utiliza siempre SMPT para utilizar un servidor web de mail.
-
-From : Una dirección de correo electrónico válida. (example@gmail.com)
-
-Host : Link del servidor SMPT. (smpt.gmail.com:587)
-
-Username : Utiliza el nombre de usuario que prefieras. (example@gmail.com)
-
-Password : Contraseña de tu cuenta de mail. (Ex : Example123)
-
-Se recomienda enviar el mail de prueba disponible para comprobar que todo ha funcionado correctamente. [victim:(positionasunto)
-
+It is recommended to send the available test email to check that everything has worked correctly. [victim: (subject position)]
 
 SAVE.
 
-2. **Configurar "Landing Page"**
+2. **Configure "Landing Page"**
 
-Name : Nombre de la página web que se intenta clonar. (Google)
-
-Presione importar sitio e ingrese la URL del sitio web que va a clonar.
-
-Marque "Capture Sumbitted Data" para recibir los datos recopilados de la víctima.
-
-Marque "Capture passwords" para recopilar las contraseñas de la víctima. Las contraseñas se mostrarán como texto sin formato si
-no usa un  SSL.
-
-Redirect to :  Redirigirá al sitio una vez que se haya enviado la contraseña. (google.com/login)
+Name: Name of the website being cloned. (Google)
+Press import site and enter the URL of the website you are going to clone.
+Check "Capture Submitted Data" to receive the data collected from the victim.
+Check "Capture passwords" to collect the victim's passwords. Passwords will be displayed as plain text if you don't use SSL.
+Redirect to: Will redirect to the site once the password has been sent. (google.com/login)
 
 SAVE.
 
 3. **Email Templates**
 
-Name :  Introduce el nombre que vas a utilizar para el Mail  (Google)
-
-Import Email : Copie el código fuente del contenido del correo electrónico y cópielo para tener un correo electrónico hecho.
-
-Marque "Change Links to point to Landing Page" Será redirigido a nuestra página de destino. .
-
-Si no quieres importar un correo electrónico tendrás que hacer todo este proceso manualmente. 
-
-Marque "Add Tracking Image".
-
-Añadir archivos al mail.
+Name: Enter the name you will use for the email (Google)
+Import Email: Copy the source code of the email content and paste it to have a completed email.
+Check "Change Links to point to Landing Page". It will be redirected to our landing page.
+If you don't want to import an email, you will have to do this entire process manually.
+Check "Add Tracking Image".
+Add files to the email.
 
 SAVE.
 
-4. **Configuraciión de "Groups"**
+4. **"Groups" Configuration**
 
-Name : Nombre del grupo (victims)
+Name: Name of the group (victims)
+Enter a name, last name, email address, and subject. And press ADD.
 
-Ingrese un nombre, apellido, dirección de correo electrónico y asunto. Y presione ADD. 
+SAVE.
 
-SAVE
+5. **"Campaigns" Configuration**
 
-5. **Configuración de "Campaigns".**
+Name: Any name. (Google)
+Email Template: Set an email template. (Google)
+Landing Page: Select a name. (Google)
+URL: Set the url you are using for the phishing attack (http:0.0.0.0:80 -> Default)
+Sending profile: Select a sending profile. (Gmail)
+Groups: Add a group.
 
-Name : Cualquier nombre. (Google)
+LAUNCH CAMPAIGN.
 
-Email Template : Establecer una plantilla de correo electrónico  (Google)
+It will start sending to the group. When the data is in, it will be accessible.
 
-Landing Page : Seleccionar un nombre (Google)
-
-URL : Establezca la url que está utilizando para el ataque de phishing  (http:0.0.0.0:80 -> Default)
-
-Sending profile : Seleccione un perfil emisor. (Gmail)
-
-Groups : Añadir un grupo.
-
-LAUNCH CAMPAIGN
-
-Comenzará a enviar al grupo. Cuando los datos estén dentro, serán accesibles. 
